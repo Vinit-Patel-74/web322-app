@@ -1,46 +1,58 @@
-const fs = require("fs");
+const fs = require('fs');
+const path = require('path');
 
-let items = [];
+let posts = [];
 let categories = [];
 
-function initialize() {
+function readFileAsync(filePath) {
   return new Promise((resolve, reject) => {
-    fs.readFile("./data/items.json", "utf8", (err, itemsData) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) {
-        reject("Unable to read items file");
-        return;
+        reject(err);
+      } else {
+        resolve(JSON.parse(data));
       }
-      items = JSON.parse(itemsData);
-
-      fs.readFile("./data/categories.json", "utf8", (err, categoriesData) => {
-        if (err) {
-          reject("Unable to read categories file");
-          return;
-        }
-        categories = JSON.parse(categoriesData);
-        resolve();
-      });
     });
   });
 }
 
-function getAllItems() {
+function initialize() {
   return new Promise((resolve, reject) => {
-    if (items.length === 0) {
-      reject("No results returned");
+    const postsPath = path.join(__dirname, 'data', 'posts.json');
+    const categoriesPath = path.join(__dirname, 'data', 'categories.json');
+
+    readFileAsync(postsPath)
+      .then(data => {
+        posts = data;
+        return readFileAsync(categoriesPath);
+      })
+      .then(data => {
+        categories = data;
+        resolve();
+      })
+      .catch(err => {
+        reject(`Unable to read file: ${err}`);
+      });
+  });
+}
+
+function getAllPosts() {
+  return new Promise((resolve, reject) => {
+    if (posts.length === 0) {
+      reject('No results returned');
     } else {
-      resolve(items);
+      resolve(posts);
     }
   });
 }
 
-function getPublishedItems() {
+function getPublishedPosts() {
   return new Promise((resolve, reject) => {
-    const publishedItems = items.filter(item => item.published === true);
-    if (publishedItems.length === 0) {
-      reject("No results returned");
+    const publishedPosts = posts.filter(post => post.published);
+    if (publishedPosts.length === 0) {
+      reject('No results returned');
     } else {
-      resolve(publishedItems);
+      resolve(publishedPosts);
     }
   });
 }
@@ -48,7 +60,7 @@ function getPublishedItems() {
 function getCategories() {
   return new Promise((resolve, reject) => {
     if (categories.length === 0) {
-      reject("No results returned");
+      reject('No results returned');
     } else {
       resolve(categories);
     }
@@ -57,7 +69,7 @@ function getCategories() {
 
 module.exports = {
   initialize,
-  getAllItems,
-  getPublishedItems,
-  getCategories
+  getAllPosts,
+  getPublishedPosts,
+  getCategories,
 };
